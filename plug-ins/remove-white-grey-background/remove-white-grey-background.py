@@ -21,6 +21,11 @@ PROC_NAME = "python-fu-remove-white-grey-background"
 TRANSPARENCY_THRESHOLD = 0.12
 OPACITY_THRESHOLD = 0.35
 
+# Smallest post-ramp value counted as "some color present" (see
+# layer_has_color). A layer with nothing above this is left untouched
+# instead of being made fully transparent.
+NO_COLOR_EPSILON = 1.0 / 255
+
 
 def apply_gegl_filter(drawable, operation, label, properties):
     filt = Gimp.DrawableFilter.new(drawable, operation, label)
@@ -31,6 +36,9 @@ def apply_gegl_filter(drawable, operation, label, properties):
     drawable.merge_filter(filt)
 
 
+# TODO: on Indexed-mode images, merging this filter chain into an
+# Indexed-format scratch layer may force palette quantization, turning the
+# soft ramp into hard bands. Not yet verified against real GIMP behavior.
 def saturation_map(image, layer):
     """Return a scratch layer holding the layer's HSV saturation, remapped
     into a 0..1 alpha ramp between the two threshold constants."""
@@ -54,25 +62,46 @@ def saturation_map(image, layer):
     return scratch
 
 
+def layer_has_color(scratch):
+    """True if any pixel of the (already ramped) saturation map is above
+    NO_COLOR_EPSILON, i.e. the layer has at least some non-background color."""
+    _, _, _, _, count, _ = scratch.histogram(
+        Gimp.HistogramChannel.VALUE, NO_COLOR_EPSILON, 1.0
+    )
+    return count > 0
+
+
 def remove_background(image, layer):
-    if not layer.has_alpha():
-        layer.add_alpha()
+    if layer.get_mask() is not None:
+        Gimp.message(
+            'Remove White/Grey Background: skipped "%s" (it already has a '
+            "layer mask)." % layer.get_name()
+        )
+        return
 
     scratch = saturation_map(image, layer)
+    try:
+        if not layer_has_color(scratch):
+            return
 
-    mask = layer.create_mask(Gimp.AddMaskType.WHITE)
-    layer.add_mask(mask)
+        if not layer.has_alpha():
+            layer.add_alpha()
 
-    src_buffer = scratch.get_buffer()
-    dst_buffer = mask.get_shadow_buffer()
-    src_buffer.copy(None, Gegl.AbyssPolicy.NONE, dst_buffer, None)
-    dst_buffer.flush()
-    mask.merge_shadow(True)
-    mask.update(0, 0, layer.get_width(), layer.get_height())
-
-    layer.remove_mask(Gimp.MaskApplyMode.APPLY)
-
-    image.remove_layer(scratch)
+        mask = layer.create_mask(Gimp.AddMaskType.WHITE)
+        layer.add_mask(mask)
+        try:
+            src_buffer = scratch.get_buffer()
+            dst_buffer = mask.get_shadow_buffer()
+            src_buffer.copy(None, Gegl.AbyssPolicy.NONE, dst_buffer, None)
+            dst_buffer.flush()
+            mask.merge_shadow(True)
+            mask.update(0, 0, layer.get_width(), layer.get_height())
+            layer.remove_mask(Gimp.MaskApplyMode.APPLY)
+        except Exception:
+            layer.remove_mask(Gimp.MaskApplyMode.DISCARD)
+            raise
+    finally:
+        image.remove_layer(scratch)
 
 
 class RemoveWhiteGreyBackground(Gimp.PlugIn):
