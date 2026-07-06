@@ -1,12 +1,25 @@
 # gimp-auto-arrange
 
-A GIMP 3.0 plug-in that arranges a stack of layers side by side in one pass.
+GIMP 3.0 plug-ins for arranging a stack of layers side by side and cleaning
+up their background — built for lining up stained tree-ring microsection
+scans, but generally useful for any batch of similarly-named, sequentially
+numbered images.
 
-If you regularly open a batch of similarly-named, sequentially-numbered
-images as layers (e.g. `File > Open as Layers`), this saves you from
-dragging each one into place and resizing the canvas by hand.
+## Workflow
 
-## What it does
+1. Open your numbered images as layers into a single image
+   (`File > Open as Layers`).
+2. Run `Image > Arrange Layers Side by Side` (see below).
+3. Run `Image > Remove White/Grey Background` (see below).
+4. Manually nudge layers closer together now that their backgrounds are
+   transparent — this last bit stays manual since it needs a precise eye.
+
+## Plug-ins
+
+### Arrange Layers Side by Side
+
+If you regularly open a batch of numbered images as layers, this saves you
+from dragging each one into place and resizing the canvas by hand.
 
 - Reads the **last number** found in each layer's name (e.g. `scan_012` → `12`).
 - Lines the layers up in a single horizontal row, **no gap**: the layer with
@@ -19,24 +32,43 @@ dragging each one into place and resizing the canvas by hand.
   message names them so you can double check the result.
 - Runs as a single undo step.
 
+### Remove White/Grey Background
+
+For stained microsection scans (e.g. red/blue cells on white/grey paper):
+makes the white/grey background of every layer transparent so the images can
+then be packed closer together than their rectangular bounds would allow.
+
+- Detects background by **color saturation**, not brightness: any pixel
+  close to grayscale (white, light grey, or dark grey/shadow) is treated as
+  background, while colored (e.g. red/blue stained) pixels stay opaque
+  regardless of how light or dark they are.
+- Edges are **soft/feathered**, matching the antialiasing in the source scan.
+- Two constants at the top of the script control the cutoff — tune them by
+  eye if needed:
+  - `TRANSPARENCY_THRESHOLD` (default `0.12`): saturation below this is
+    fully transparent. Raise it if background remnants are left behind.
+  - `OPACITY_THRESHOLD` (default `0.35`): saturation above this stays fully
+    opaque. Lower it if pale cell edges are getting eaten away.
+- Runs as a single undo step.
+
 ## Install
 
-1. Copy the `side-by-side-arrange` folder into your GIMP 3.0 plug-ins
-   directory:
-   - **Linux/macOS**: `~/.config/GIMP/3.0/plug-ins/side-by-side-arrange/`
-   - **Windows**: `%APPDATA%\GIMP\3.0\plug-ins\side-by-side-arrange\`
-2. Make sure the script is executable:
-   ```sh
-   chmod +x side-by-side-arrange.py
-   ```
-3. Restart GIMP (Python plug-ins are only picked up on startup, unlike
-   Script-Fu's "Refresh Scripts").
+For each plug-in, copy its folder into your GIMP 3.0 plug-ins directory:
 
-## Use
+- **Linux/macOS**: `~/.config/GIMP/3.0/plug-ins/`
+- **Windows**: `%APPDATA%\GIMP\3.0\plug-ins\`
 
-1. Open your numbered images as layers into a single image
-   (`File > Open as Layers`).
-2. Run `Image > Arrange Layers Side by Side`.
+So you end up with e.g.
+`~/.config/GIMP/3.0/plug-ins/side-by-side-arrange/side-by-side-arrange.py`.
+
+Make sure each script is executable:
+
+```sh
+chmod +x side-by-side-arrange.py remove-white-grey-background.py
+```
+
+Then restart GIMP (Python plug-ins are only picked up on startup, unlike
+Script-Fu's "Refresh Scripts").
 
 ## Requirements
 
