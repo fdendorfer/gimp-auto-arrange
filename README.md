@@ -75,8 +75,18 @@ mkdir -p ~/.config/GIMP/3.0/plug-ins/side-by-side-arrange && curl -fsSL -o ~/.co
 mkdir -p ~/.config/GIMP/3.0/plug-ins/remove-white-grey-background && curl -fsSL -o ~/.config/GIMP/3.0/plug-ins/remove-white-grey-background/remove-white-grey-background.py https://raw.githubusercontent.com/fdendorfer/gimp-auto-arrange/main/plug-ins/remove-white-grey-background/remove-white-grey-background.py && chmod +x ~/.config/GIMP/3.0/plug-ins/remove-white-grey-background/remove-white-grey-background.py
 ```
 
-Otherwise, copy each script's folder in by hand and make sure it's
-executable:
+On Windows you can do the same from PowerShell:
+
+```powershell
+New-Item -ItemType Directory -Force -Path "$env:APPDATA\GIMP\3.0\plug-ins\side-by-side-arrange" | Out-Null; Invoke-WebRequest -Uri "https://raw.githubusercontent.com/fdendorfer/gimp-auto-arrange/main/plug-ins/side-by-side-arrange/side-by-side-arrange.py" -OutFile "$env:APPDATA\GIMP\3.0\plug-ins\side-by-side-arrange\side-by-side-arrange.py"
+```
+
+```powershell
+New-Item -ItemType Directory -Force -Path "$env:APPDATA\GIMP\3.0\plug-ins\remove-white-grey-background" | Out-Null; Invoke-WebRequest -Uri "https://raw.githubusercontent.com/fdendorfer/gimp-auto-arrange/main/plug-ins/remove-white-grey-background/remove-white-grey-background.py" -OutFile "$env:APPDATA\GIMP\3.0\plug-ins\remove-white-grey-background\remove-white-grey-background.py"
+```
+
+Otherwise, copy each script's folder in by hand. On Linux/macOS make sure
+it's executable:
 
 ```sh
 chmod +x side-by-side-arrange.py remove-white-grey-background.py
