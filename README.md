@@ -61,7 +61,18 @@ For each plug-in, copy its folder into your GIMP 3.0 plug-ins directory:
 So you end up with e.g.
 `~/.config/GIMP/3.0/plug-ins/side-by-side-arrange/side-by-side-arrange.py`.
 
-Make sure each script is executable:
+On Linux/macOS you can fetch a plug-in straight from GitHub with one command:
+
+```sh
+mkdir -p ~/.config/GIMP/3.0/plug-ins/side-by-side-arrange && curl -fsSL -o ~/.config/GIMP/3.0/plug-ins/side-by-side-arrange/side-by-side-arrange.py https://raw.githubusercontent.com/fdendorfer/gimp-auto-arrange/main/plug-ins/side-by-side-arrange/side-by-side-arrange.py && chmod +x ~/.config/GIMP/3.0/plug-ins/side-by-side-arrange/side-by-side-arrange.py
+```
+
+```sh
+mkdir -p ~/.config/GIMP/3.0/plug-ins/remove-white-grey-background && curl -fsSL -o ~/.config/GIMP/3.0/plug-ins/remove-white-grey-background/remove-white-grey-background.py https://raw.githubusercontent.com/fdendorfer/gimp-auto-arrange/main/plug-ins/remove-white-grey-background/remove-white-grey-background.py && chmod +x ~/.config/GIMP/3.0/plug-ins/remove-white-grey-background/remove-white-grey-background.py
+```
+
+Otherwise, copy each script's folder in by hand and make sure it's
+executable:
 
 ```sh
 chmod +x side-by-side-arrange.py remove-white-grey-background.py
