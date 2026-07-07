@@ -78,7 +78,8 @@ def remove_background(image, layer):
         try:
             src_buffer = scratch.get_buffer()
             dst_buffer = mask.get_shadow_buffer()
-            src_buffer.copy(None, Gegl.AbyssPolicy.NONE, dst_buffer, None)
+            rect = src_buffer.get_extent()
+            src_buffer.copy(rect, Gegl.AbyssPolicy.NONE, dst_buffer, rect)
             dst_buffer.flush()
             mask.merge_shadow(True)
             mask.update(0, 0, layer.get_width(), layer.get_height())
