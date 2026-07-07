@@ -21,11 +21,6 @@ PROC_NAME = "python-fu-remove-white-grey-background"
 TRANSPARENCY_THRESHOLD = 0.12
 OPACITY_THRESHOLD = 0.35
 
-# Smallest post-ramp value counted as "some color present" (see
-# layer_has_color). A layer with nothing above this is left untouched
-# instead of being made fully transparent.
-NO_COLOR_EPSILON = 1.0 / 255
-
 
 def apply_gegl_filter(drawable, operation, label, properties):
     filt = Gimp.DrawableFilter.new(drawable, operation, label)
@@ -62,15 +57,6 @@ def saturation_map(image, layer):
     return scratch
 
 
-def layer_has_color(scratch):
-    """True if any pixel of the (already ramped) saturation map is above
-    NO_COLOR_EPSILON, i.e. the layer has at least some non-background color."""
-    _, _, _, _, count, _ = scratch.histogram(
-        Gimp.HistogramChannel.VALUE, NO_COLOR_EPSILON, 1.0
-    )
-    return count > 0
-
-
 def remove_background(image, layer):
     if layer.get_mask() is not None:
         Gimp.message(
@@ -79,11 +65,11 @@ def remove_background(image, layer):
         )
         return
 
+    if image.get_base_type() == Gimp.ImageBaseType.GRAY:
+        return
+
     scratch = saturation_map(image, layer)
     try:
-        if not layer_has_color(scratch):
-            return
-
         if not layer.has_alpha():
             layer.add_alpha()
 

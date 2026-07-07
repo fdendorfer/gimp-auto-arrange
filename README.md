@@ -49,8 +49,8 @@ then be packed closer together than their rectangular bounds would allow.
     fully transparent. Raise it if background remnants are left behind.
   - `OPACITY_THRESHOLD` (default `0.35`): saturation above this stays fully
     opaque. Lower it if pale cell edges are getting eaten away.
-- A layer with **no detected color** anywhere (e.g. a Grayscale-mode image)
-  is left untouched rather than being made fully transparent.
+- If the image is in **Grayscale mode**, saturation is always zero, so
+  layers are left untouched rather than being made fully transparent.
 - A layer that **already has a layer mask** is skipped with a warning,
   rather than risking that mask.
 - Runs as a single undo step.
