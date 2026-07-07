@@ -42,13 +42,27 @@ then be packed closer together than their rectangular bounds would allow.
   close to grayscale (white, light grey, or dark grey/shadow) is treated as
   background, while colored (e.g. red/blue stained) pixels stay opaque
   regardless of how light or dark they are.
-- Edges are **soft/feathered**, matching the antialiasing in the source scan.
-- Two constants at the top of the script control the cutoff — tune them by
-  eye if needed:
-  - `TRANSPARENCY_THRESHOLD` (default `0.12`): saturation below this is
-    fully transparent. Raise it if background remnants are left behind.
-  - `OPACITY_THRESHOLD` (default `0.35`): saturation above this stays fully
-    opaque. Lower it if pale cell edges are getting eaten away.
+- Light-colored areas **enclosed inside a cell** (e.g. a pale interior
+  surrounded by a stained wall) are left alone rather than being punched
+  through — only background that's contiguously connected to the edge of
+  the image gets removed. This assumes the four corners of the image are
+  genuine background.
+- Four constants at the top of the script control the behavior — tune them
+  by eye if needed:
+  - `TRANSPARENCY_THRESHOLD` / `OPACITY_THRESHOLD` (default `0.02` /
+    `0.02`): saturation at or below `TRANSPARENCY_THRESHOLD` is fully
+    transparent, at or above `OPACITY_THRESHOLD` is fully opaque, values in
+    between form a ramp. Equal values (the default) give a hard edge; give
+    `OPACITY_THRESHOLD` a slightly higher value for a soft/feathered edge
+    instead. Real saturation values in a scan tend to be much lower than
+    you'd guess — check a layer's actual range before tuning (see the
+    comment above these constants in the script for how).
+  - `SAMPLE_THRESHOLD` (default `0.05`): how similar a pixel must be to a
+    corner pixel to flood-fill together as background, when deciding what
+    counts as an enclosed island.
+  - `GROW_PIXELS` (default `1`): expands the detected background region by
+    this many pixels before excluding everything else, so the true outer
+    edge doesn't get treated as an enclosed island too.
 - If the image is in **Grayscale mode**, saturation is always zero, so
   layers are left untouched rather than being made fully transparent.
 - A layer that **already has a layer mask** is skipped with a warning,

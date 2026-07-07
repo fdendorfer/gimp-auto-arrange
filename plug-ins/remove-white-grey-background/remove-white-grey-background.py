@@ -14,12 +14,27 @@ from gi.repository import GLib
 
 PROC_NAME = "python-fu-remove-white-grey-background"
 
-# HSV saturation (0-1) below this value becomes fully transparent; above this
-# value stays fully opaque; values in between form a soft ramp. Raise
-# TRANSPARENCY_THRESHOLD if background remnants are left behind, lower
-# OPACITY_THRESHOLD if pale cell edges are getting eaten away.
-TRANSPARENCY_THRESHOLD = 0.12
-OPACITY_THRESHOLD = 0.35
+# HSV saturation (0-1) at or below this value becomes fully transparent; at
+# or above OPACITY_THRESHOLD stays fully opaque; values in between form a
+# ramp (a gap between the two gives a soft/feathered edge; equal values, the
+# shipped default, give a hard edge). Raise TRANSPARENCY_THRESHOLD if
+# background remnants are left behind, lower OPACITY_THRESHOLD if pale cell
+# edges are getting eaten away. Real saturation values tend to be much lower
+# than you'd guess - check a layer's actual range before tuning, e.g. in the
+# Python-Fu console: `layer.histogram(Gimp.HistogramChannel.VALUE, 0, 1)`
+# after running just the component-extract step (see README).
+TRANSPARENCY_THRESHOLD = 0.02
+OPACITY_THRESHOLD = 0.02
+
+# How similar a pixel must be to a corner pixel to flood-fill together as
+# "background" when protecting enclosed islands (see protect_enclosed_islands
+# below) - same units as GIMP's own sample threshold.
+SAMPLE_THRESHOLD = 0.05
+
+# Pixels to grow the flood-filled background selection by before inverting
+# it, so the soft transition ring right at the true outer edge isn't
+# clobbered along with genuinely enclosed interior islands.
+GROW_PIXELS = 1
 
 
 def apply_gegl_filter(drawable, operation, label, properties):
@@ -57,6 +72,28 @@ def saturation_map(image, layer):
     return scratch
 
 
+def protect_enclosed_islands(image, layer, scratch, mask):
+    """Restore full opacity to any area the ramp marked transparent but that
+    isn't actually reachable from the image border (e.g. a light-colored
+    area enclosed inside a cell), by flood-filling the background from all
+    four corners of scratch and refilling everything else on the mask back
+    to opaque. Assumes the corners of the image are genuine background."""
+    width = layer.get_width()
+    height = layer.get_height()
+
+    Gimp.context_set_sample_threshold(SAMPLE_THRESHOLD)
+    image.select_contiguous_color(Gimp.ChannelOps.REPLACE, scratch, 0, 0)
+    image.select_contiguous_color(Gimp.ChannelOps.ADD, scratch, width - 1, 0)
+    image.select_contiguous_color(Gimp.ChannelOps.ADD, scratch, 0, height - 1)
+    image.select_contiguous_color(
+        Gimp.ChannelOps.ADD, scratch, width - 1, height - 1
+    )
+    Gimp.Selection.grow(image, GROW_PIXELS)
+    Gimp.Selection.invert(image)
+    mask.edit_fill(Gimp.FillType.WHITE)
+    Gimp.Selection.none(image)
+
+
 def remove_background(image, layer):
     if layer.get_mask() is not None:
         Gimp.message(
@@ -83,6 +120,9 @@ def remove_background(image, layer):
             dst_buffer.flush()
             mask.merge_shadow(True)
             mask.update(0, 0, layer.get_width(), layer.get_height())
+
+            protect_enclosed_islands(image, layer, scratch, mask)
+
             layer.remove_mask(Gimp.MaskApplyMode.APPLY)
         except Exception:
             layer.remove_mask(Gimp.MaskApplyMode.DISCARD)
@@ -108,8 +148,9 @@ class RemoveWhiteGreyBackground(Gimp.PlugIn):
         procedure.set_documentation(
             "Make white/grey background transparent",
             "Makes low-saturation (white/grey) areas of every layer "
-            "transparent, with a soft edge, while keeping colored "
-            "(e.g. red/blue stained) areas opaque.",
+            "transparent, while keeping colored (e.g. red/blue stained) "
+            "areas opaque - including any low-saturation areas enclosed "
+            "inside them.",
             name,
         )
         procedure.set_attribution("gimp-auto-arrange", "gimp-auto-arrange", "2026")
