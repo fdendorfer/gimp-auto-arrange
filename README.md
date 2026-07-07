@@ -57,36 +57,47 @@ then be packed closer together than their rectangular bounds would allow.
 
 ## Install
 
-For each plug-in, copy its folder into your GIMP 3.0 plug-ins directory:
+For each plug-in, copy its folder into your GIMP plug-ins directory:
 
-- **Linux/macOS**: `~/.config/GIMP/3.0/plug-ins/`
-- **Windows**: `%APPDATA%\GIMP\3.0\plug-ins\`
+- **Linux/macOS**: `~/.config/GIMP/<version>/plug-ins/`
+- **Windows**: `%APPDATA%\GIMP\<version>\plug-ins\`
+
+`<version>` is GIMP's own per-release config folder (e.g. `3.0`, `3.2`, ...)
+— **not** always `3.0`. GIMP creates this folder the first time you launch
+it, so **launch GIMP at least once** before installing, then check
+`~/.config/GIMP/` (or `%APPDATA%\GIMP\`) to see which version folder is
+actually there. Using the wrong one is the most common reason a plug-in
+doesn't show up: GIMP only scans its own version's folder, even though the
+plug-in code itself (`gi.require_version("Gimp", "3.0")`) targets the
+GIMP-3 API generation as a whole and works unchanged across 3.0, 3.2, etc.
 
 So you end up with e.g.
-`~/.config/GIMP/3.0/plug-ins/side-by-side-arrange/side-by-side-arrange.py`.
+`~/.config/GIMP/3.2/plug-ins/side-by-side-arrange/side-by-side-arrange.py`.
 
-On Linux/macOS you can fetch a plug-in straight from GitHub with one command:
-
-```sh
-mkdir -p ~/.config/GIMP/3.0/plug-ins/side-by-side-arrange && curl -fsSL -o ~/.config/GIMP/3.0/plug-ins/side-by-side-arrange/side-by-side-arrange.py https://raw.githubusercontent.com/fdendorfer/gimp-auto-arrange/main/plug-ins/side-by-side-arrange/side-by-side-arrange.py && chmod +x ~/.config/GIMP/3.0/plug-ins/side-by-side-arrange/side-by-side-arrange.py
-```
+The commands below auto-detect the right version folder (falling back to
+`3.0` if GIMP has never been run) so you don't have to figure it out
+by hand. On Linux/macOS:
 
 ```sh
-mkdir -p ~/.config/GIMP/3.0/plug-ins/remove-white-grey-background && curl -fsSL -o ~/.config/GIMP/3.0/plug-ins/remove-white-grey-background/remove-white-grey-background.py https://raw.githubusercontent.com/fdendorfer/gimp-auto-arrange/main/plug-ins/remove-white-grey-background/remove-white-grey-background.py && chmod +x ~/.config/GIMP/3.0/plug-ins/remove-white-grey-background/remove-white-grey-background.py
+gimp_ver=$(ls -1 ~/.config/GIMP 2>/dev/null | grep -E '^[0-9]+\.[0-9]+$' | sort -V | tail -n1); gimp_ver=${gimp_ver:-3.0}; mkdir -p ~/.config/GIMP/$gimp_ver/plug-ins/side-by-side-arrange && curl -fsSL -o ~/.config/GIMP/$gimp_ver/plug-ins/side-by-side-arrange/side-by-side-arrange.py https://raw.githubusercontent.com/fdendorfer/gimp-auto-arrange/main/plug-ins/side-by-side-arrange/side-by-side-arrange.py && chmod +x ~/.config/GIMP/$gimp_ver/plug-ins/side-by-side-arrange/side-by-side-arrange.py
 ```
 
-On Windows you can do the same from PowerShell:
+```sh
+gimp_ver=$(ls -1 ~/.config/GIMP 2>/dev/null | grep -E '^[0-9]+\.[0-9]+$' | sort -V | tail -n1); gimp_ver=${gimp_ver:-3.0}; mkdir -p ~/.config/GIMP/$gimp_ver/plug-ins/remove-white-grey-background && curl -fsSL -o ~/.config/GIMP/$gimp_ver/plug-ins/remove-white-grey-background/remove-white-grey-background.py https://raw.githubusercontent.com/fdendorfer/gimp-auto-arrange/main/plug-ins/remove-white-grey-background/remove-white-grey-background.py && chmod +x ~/.config/GIMP/$gimp_ver/plug-ins/remove-white-grey-background/remove-white-grey-background.py
+```
+
+On Windows, from PowerShell:
 
 ```powershell
-New-Item -ItemType Directory -Force -Path "$env:APPDATA\GIMP\3.0\plug-ins\side-by-side-arrange" | Out-Null; Invoke-WebRequest -Uri "https://raw.githubusercontent.com/fdendorfer/gimp-auto-arrange/main/plug-ins/side-by-side-arrange/side-by-side-arrange.py" -OutFile "$env:APPDATA\GIMP\3.0\plug-ins\side-by-side-arrange\side-by-side-arrange.py"
+$gimpVer = (Get-ChildItem "$env:APPDATA\GIMP" -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '^\d+\.\d+$' } | Sort-Object { [version]$_.Name } -Descending | Select-Object -First 1 -ExpandProperty Name); if (-not $gimpVer) { $gimpVer = "3.0" }; New-Item -ItemType Directory -Force -Path "$env:APPDATA\GIMP\$gimpVer\plug-ins\side-by-side-arrange" | Out-Null; Invoke-WebRequest -Uri "https://raw.githubusercontent.com/fdendorfer/gimp-auto-arrange/main/plug-ins/side-by-side-arrange/side-by-side-arrange.py" -OutFile "$env:APPDATA\GIMP\$gimpVer\plug-ins\side-by-side-arrange\side-by-side-arrange.py"
 ```
 
 ```powershell
-New-Item -ItemType Directory -Force -Path "$env:APPDATA\GIMP\3.0\plug-ins\remove-white-grey-background" | Out-Null; Invoke-WebRequest -Uri "https://raw.githubusercontent.com/fdendorfer/gimp-auto-arrange/main/plug-ins/remove-white-grey-background/remove-white-grey-background.py" -OutFile "$env:APPDATA\GIMP\3.0\plug-ins\remove-white-grey-background\remove-white-grey-background.py"
+$gimpVer = (Get-ChildItem "$env:APPDATA\GIMP" -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '^\d+\.\d+$' } | Sort-Object { [version]$_.Name } -Descending | Select-Object -First 1 -ExpandProperty Name); if (-not $gimpVer) { $gimpVer = "3.0" }; New-Item -ItemType Directory -Force -Path "$env:APPDATA\GIMP\$gimpVer\plug-ins\remove-white-grey-background" | Out-Null; Invoke-WebRequest -Uri "https://raw.githubusercontent.com/fdendorfer/gimp-auto-arrange/main/plug-ins/remove-white-grey-background/remove-white-grey-background.py" -OutFile "$env:APPDATA\GIMP\$gimpVer\plug-ins\remove-white-grey-background\remove-white-grey-background.py"
 ```
 
-Otherwise, copy each script's folder in by hand. On Linux/macOS make sure
-it's executable:
+Otherwise, copy each script's folder in by hand into the correct version
+folder. On Linux/macOS make sure it's executable:
 
 ```sh
 chmod +x side-by-side-arrange.py remove-white-grey-background.py
